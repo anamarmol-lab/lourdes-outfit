@@ -79,15 +79,85 @@
   };
   const baseSrc = () => real['base'] || svgUrl(baseSVG());
 
-  const probe = (url) => new Promise(res => { const im = new Image(); im.onload = () => res(true); im.onerror = () => res(false); im.src = url; });
+  /* ---------- imágenes reales: sacar el fondo y acomodarlas sobre el cuerpo ---------- */
+  const W0 = 1024, H0 = 1536; // lienzo de la imagen base
+  // dónde va cada categoría sobre el cuerpo (en píxeles del lienzo 1024 x 1536)
+  const FIT = {
+    top:    { by:'w',   size:285, ax:512, ay:272,  anchor:'top',    maxH:345 },
+    bottom: { by:'h',   size:880, ax:512, ay:560,  anchor:'top' },
+    shoes:  { by:'w',   size:350, ax:540, ay:1512, anchor:'bottom' },
+    bag:    { by:'max', size:240, ax:650, ay:760,  anchor:'center' },
+    obj:    { by:'max', size:260, ax:690, ay:830,  anchor:'center' }
+  };
+  // ajustes puntuales por prenda: 'categoria:numero' -> cambios sobre FIT
+  const FIT_ITEM = {
+    // largo de cada pollera o pantalón, desde la cintura (en píxeles del lienzo)
+    'bottom:1':{ size:850 }, 'bottom:2':{ size:880 }, 'bottom:3':{ size:880 }, 'bottom:4':{ size:850 },
+    'bottom:5':{ size:800 }, 'bottom:6':{ size:560 }, 'bottom:7':{ size:880 }, 'bottom:8':{ size:860 },
+    // ancho de los tops con mangas
+    'top:2':{ size:380 }, 'top:6':{ size:340 }, 'top:8':{ size:340 }, 'top:5':{ size:240, maxH:200 }
+  };
+
+  const loadImg = (src) => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+  const probe = (url) => loadImg(url).then(() => true, () => false);
+
+  // saca el fondo claro que toca los bordes (si ya es transparente, no hace nada)
+  function removeBackground(ctx, w, h) {
+    const img = ctx.getImageData(0, 0, w, h), px = img.data;
+    // color del fondo: promedio de las 4 esquinas (puede ser blanco o gris claro)
+    const corners = [[0,0],[w-1,0],[0,h-1],[w-1,h-1]].map(([x,y]) => { const i = (y*w+x)*4; return [px[i],px[i+1],px[i+2]]; });
+    const bg = [0,1,2].map(k => corners.reduce((a,v) => a + v[k], 0) / 4);
+    const light = (i) => px[i+3] < 10 || (px[i] > 228 && px[i+1] > 228 && px[i+2] > 228) ||
+      ((px[i]-bg[0])**2 + (px[i+1]-bg[1])**2 + (px[i+2]-bg[2])**2 < 45*45 && bg[0] > 170);
+    const seen = new Uint8Array(w * h), stack = [];
+    const push = (x, y) => { const p = y * w + x; if (!seen[p] && light(p * 4)) { seen[p] = 1; stack.push(p); } };
+    for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+    for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+    while (stack.length) {
+      const p = stack.pop(), x = p % w, y = (p / w) | 0;
+      if (x > 0) push(x - 1, y); if (x < w - 1) push(x + 1, y);
+      if (y > 0) push(x, y - 1); if (y < h - 1) push(x, y + 1);
+    }
+    for (let p = 0; p < seen.length; p++) if (seen[p]) px[p * 4 + 3] = 0;
+    // borde suave: saca el halo claro pegado al fondo
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const p = y * w + x, i = p * 4;
+      if (px[i+3] && px[i] > 205 && px[i+1] > 205 && px[i+2] > 205 &&
+          (px[(p-1)*4+3] === 0 || px[(p+1)*4+3] === 0 || px[(p-w)*4+3] === 0 || px[(p+w)*4+3] === 0)) px[i+3] = 0;
+    }
+    ctx.putImageData(img, 0, 0);
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (px[(y * w + x) * 4 + 3] > 20) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    return x1 < 0 ? null : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  }
+
+  async function prepare(url, cat, num) {
+    const im = await loadImg(url);
+    const src = document.createElement('canvas'); src.width = im.naturalWidth; src.height = im.naturalHeight;
+    const sctx = src.getContext('2d', { willReadFrequently: true }); sctx.drawImage(im, 0, 0);
+    const bb = removeBackground(sctx, src.width, src.height);
+    const out = document.createElement('canvas'); out.width = W0; out.height = H0; const octx = out.getContext('2d');
+    if (!bb) return url;
+    if (!cat) { // imagen base: solo fondo transparente, mismo lienzo
+      octx.drawImage(src, 0, 0, W0, H0); return out.toDataURL('image/png');
+    }
+    const f = Object.assign({}, FIT[cat], FIT_ITEM[cat + ':' + num] || {});
+    let sc = f.by === 'w' ? f.size / bb.w : f.by === 'h' ? f.size / bb.h : f.size / Math.max(bb.w, bb.h);
+    if (f.maxH) sc = Math.min(sc, f.maxH / bb.h);
+    const dw = bb.w * sc, dh = bb.h * sc, dx = f.ax - dw / 2;
+    const dy = f.anchor === 'top' ? f.ay : f.anchor === 'bottom' ? f.ay - dh : f.ay - dh / 2;
+    octx.imageSmoothingQuality = 'high';
+    octx.drawImage(src, bb.x, bb.y, bb.w, bb.h, dx, dy, dw, dh);
+    return out.toDataURL('image/png');
+  }
+
   async function probeAll() {
-    const jobs = [];
-    jobs.push(probe('img/lourdes_base.png').then(ok => { if (ok) real['base'] = 'img/lourdes_base.png'; }));
-    for (const c of CATS) c.items.forEach(([tag], idx) => {
-      const url = fileFor(c.id, idx, tag);
-      jobs.push(probe(url).then(ok => { if (ok) real[keyOf(c.id, idx)] = url; }));
-    });
-    await Promise.all(jobs);
+    const base = 'img/lourdes_base.png';
+    if (await probe(base)) real['base'] = await prepare(base, null, 0).catch(() => base);
+    for (const c of CATS) for (let idx = 0; idx < c.items.length; idx++) {
+      const url = fileFor(c.id, idx, c.items[idx][0]);
+      if (await probe(url)) real[keyOf(c.id, idx)] = await prepare(url, c.id, idx + 1).catch(() => null) || undefined;
+    }
   }
 
   /* ---------- dibujar ---------- */
@@ -171,7 +241,6 @@
   function sessionStorageSafe(k, v) { try { if (v !== undefined) sessionStorage.setItem(k, v); return sessionStorage.getItem(k); } catch (e) { return null; } }
 
   /* ---------- guardar imagen ---------- */
-  const loadImg = (src) => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
   async function savePNG() {
     const W = 1000, H = 1250;
     const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const ctx = cv.getContext('2d');
@@ -189,6 +258,6 @@
   $('#btn-save').addEventListener('click', () => { savePNG().catch(() => alert('No pude guardar la imagen. Probá sacar una captura de pantalla.')); });
 
   /* ---------- inicio ---------- */
-  probeAll().then(() => { paintFigure($('#figure-intro')); refresh(); });
+  probeAll().then(() => { paintFigure($('#figure-intro')); refresh(); }).catch(() => {});
   paintFigure($('#figure-intro')); refresh();
 })();
