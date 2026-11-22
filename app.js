@@ -34,7 +34,7 @@
       <rect x="122" y="255" width="22" height="160" fill="${SKIN}"/><rect x="156" y="255" width="22" height="160" fill="${SKIN}"/>
       <ellipse cx="132" cy="417" rx="20" ry="9" fill="${SKIN}"/><ellipse cx="168" cy="417" rx="20" ry="9" fill="${SKIN}"/>
       <rect x="92" y="104" width="16" height="130" rx="8" fill="${SKIN}"/><rect x="192" y="104" width="16" height="130" rx="8" fill="${SKIN}"/>
-      <rect x="108" y="206" width="84" height="56" rx="6" fill="${COLORS.azul}" ${st}/>
+      <rect x="108" y="206" width="84" height="56" rx="6" fill="#FFFFFF" ${st}/>
       <rect x="108" y="98" width="84" height="116" rx="10" fill="${COLORS.crema}" ${st}/>
       <rect x="140" y="80" width="20" height="22" fill="${SKIN}"/>
       <ellipse cx="150" cy="55" rx="32" ry="33" fill="${SKIN}"/>
