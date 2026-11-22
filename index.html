@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F6F0E4">
+<title>Lourdes — Armá su outfit</title>
+<meta name="description" content="¿A dónde vamos? Ayudá a Lourdes a elegir qué ponerse. Una extensión del fashion film.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dawning+of+a+New+Day&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="app">
+
+  <!-- PORTADA -->
+  <section id="intro" class="screen active">
+    <div class="intro-inner">
+      <p class="kicker big">A dónde vamos</p>
+      <h1 class="title">Lourdes necesita un outfit</h1>
+      <p class="hand">Ayudala a elegir qué ponerse</p>
+      <div class="sun"><div class="figure" id="figure-intro"></div></div>
+      <button class="btn primary" id="btn-start">Empezar</button>
+    </div>
+    <div class="floor"></div>
+  </section>
+
+  <!-- JUEGO -->
+  <section id="game" class="screen">
+    <header class="bar">
+      <button class="btn icon" id="btn-home" aria-label="Volver al inicio" title="Inicio">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>
+      </button>
+      <div class="bar-title"><h2>Lourdes</h2><span class="hand small">¿a dónde vamos?</span></div>
+      <button class="btn ok" id="btn-listo">¡Listo!</button>
+    </header>
+
+    <div class="layout">
+      <div class="scene-col">
+        <div class="scene" id="scene">
+          <img class="bg" id="bg" alt="">
+          <div class="figure" id="figure"></div>
+          <div class="bgpick" id="bgpick" role="group" aria-label="Elegir fiesta"></div>
+        </div>
+        <div class="toolbar">
+          <button class="btn small" id="btn-reset">↺ Reiniciar</button>
+          <div class="slots" id="slots"></div>
+        </div>
+      </div>
+
+      <div class="closet-col">
+        <nav class="tabs" id="tabs" aria-label="Categorías"></nav>
+        <div class="grid" id="grid"></div>
+        <p class="tip hand">Tocá una prenda para ponérsela. Tocala de nuevo para sacársela.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTADO -->
+  <section id="result" class="screen">
+    <div class="result-inner">
+      <h2 class="title small">Este es tu look</h2>
+      <p class="hand">Lista para la fiesta</p>
+      <div class="scene result-scene" id="scene-result">
+        <img class="bg" id="bg-result" alt="">
+        <div class="figure" id="figure-result"></div>
+      </div>
+      <div class="result-actions">
+        <button class="btn primary" id="btn-save">Guardar imagen</button>
+        <button class="btn" id="btn-again">Seguir probando</button>
+        <button class="btn ghost" id="btn-home2">Inicio</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MISIÓN -->
+  <div id="mision" class="modal" hidden>
+    <div class="postal" role="dialog" aria-modal="true" aria-labelledby="mision-t">
+      <h2 id="mision-t" class="title small">La misión</h2>
+      <p class="hand big">Che, Lourdes no sabe qué ponerse. Hay fiesta, el placard está vacío y yo ya llego tarde.</p>
+      <p class="hand big acc">¿La ayudás a armar su outfit?</p>
+      <ol class="steps">
+        <li><b>1</b> Elegí a qué fiesta va</li>
+        <li><b>2</b> Vestila con lo que más te guste</li>
+        <li><b>3</b> Tocá ¡Listo! y mirá cómo quedó</li>
+      </ol>
+      <button class="btn primary" id="btn-vamos">Vamos</button>
+    </div>
+  </div>
+
+</main>
+<script src="app.js"></script>
+</body>
+</html>
